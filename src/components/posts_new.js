@@ -1,29 +1,53 @@
 import React, { Component } from 'react';
 import { Field, reduxForm } from 'redux-form';
+import { Link } from 'react-router-dom';
+import { connect } from 'react-redux';
+import { createPost } from '../actions';
 
 class PostsNew extends Component {
   // field argument is needed to connect the function to the field
   renderField(field) {
+    // extract the meta and touched from the field to make it nicer!
+    const { meta : { touched, error } } = field;
+    const className = `form-group ${touched && error ? 'has-danger' : ''}`;
     return (
-      <div className='form-group'>
+      <div className={className}>
         <label>{field.label}</label>
         <input className='form-control'
           type='text'
           {...field.input} //...field is an object that with a lot of biult in props, ex. onchange, onFocus, onBlur
         />
+        {/* meta.error and meta.touched is automatically added to the field object */}
+        {/* to not show error message before the field is touched */}
+        <span className='text-help'>
+          {touched ? error : ''}
+        </span>
       </div>
     );  
   }
 
+  onSubmit(values) {
+    this.props.createPost(values, () => {
+      // history.push will redirect back to the specified location
+      // put it in a callback function to make sure it desnt run before the post is created
+      // needs to be added to the action function as well
+      this.props.history.push('/');
+    });
+
+  }
+
   render() {
+    // property from reduxForm
+    const {handleSubmit} = this.props;
+    
     return (
       <div>
         {/* Field component knows how to communicate with reduxForm, but not how to display itself in the DOM */}
-        {/* in the component we decide what to display in JSX */}
-        <form>
+        {/* in the component we decide what to display in JSX and communicate with API or backend*/}
+        <form onSubmit={handleSubmit(this.onSubmit.bind(this))}>
           <Field 
             label='Title:'
-            name='title'
+            name='title' // this property must be identically named in field and validatefunction for errors to work
             component={this.renderField}
           />
           <Field 
@@ -36,6 +60,8 @@ class PostsNew extends Component {
             name='content'
             component={this.renderField}
           />
+          <button type='submit' className='btn btn-primary'>Save</button>
+          <Link to='/' className='btn btn-danger'>Cancel</Link>
         </form>
       </div>
     );
@@ -68,4 +94,6 @@ function validate(values) {
 export default reduxForm({
   validate,
   form: 'PostsNewForm'
-})(PostsNew);
+})(
+  connect(null, { createPost })(PostsNew)
+);
